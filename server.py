@@ -10,11 +10,12 @@ def handle_client(conn, address):
         if not data:
             break
         print(f"From connected user {address}: {data}")
-        conn.send(str(CLIENTS).encode())
+        filtered = list(filter(lambda client: client != address, CLIENTS))
+        conn.send(str(filtered).encode())
 
 def server_program():
     host = socket.gethostname()
-    port = 4000
+    port = 3661
 
     server_socket = socket.socket()
     server_socket.bind((host, port))
