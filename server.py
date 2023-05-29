@@ -1,9 +1,9 @@
+import json
 import socket
 import threading
 import os
 from dotenv import load
 from ClientType import Client
-
 
 load()
 
@@ -15,9 +15,13 @@ def handle_client(conn, address):
         data = conn.recv(1024).decode()
         if not data:
             break
-        CLIENTS.append(Client(address,data))
-        filtered = list(filter(lambda client: client.ip != address, CLIENTS))
-        conn.send(str(filtered).encode())
+        files = json.loads(data)['files']
+        if not files:
+            break
+        CLIENTS.append((address, files))
+        filtered = list(filter(lambda client: client[0] != address, CLIENTS))
+        clients = json.dumps({"clients": filtered})
+        conn.send(clients.encode())
 
 
 def server_program():
