@@ -3,12 +3,13 @@ import socket
 import threading
 import os
 from dotenv import load
-from ClientType import Client
 
 load()
 
 CLIENTS = []
 
+def checkClientList(address):
+    return list(filter(lambda client: client[0] == address, CLIENTS))
 
 def handle_client(conn, address):
     while True:
@@ -18,6 +19,7 @@ def handle_client(conn, address):
         files = json.loads(data)['files']
         if not files:
             break
+        # if checkClientList(address)
         CLIENTS.append((address, files))
         filtered = list(filter(lambda client: client[0] != address, CLIENTS))
         clients = json.dumps({"clients": filtered})
