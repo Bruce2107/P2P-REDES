@@ -8,8 +8,10 @@ load()
 
 CLIENTS = []
 
-def checkClientList(address):
+
+def check_client_list(address):
     return list(filter(lambda client: client[0] == address, CLIENTS))
+
 
 def handle_client(conn, address):
     while True:
@@ -19,9 +21,14 @@ def handle_client(conn, address):
         files = json.loads(data)['files']
         if not files:
             break
-        # if checkClientList(address)
-        CLIENTS.append((address, files))
-        filtered = list(filter(lambda client: client[0] != address, CLIENTS))
+        if len(check_client_list(address)) == 0:
+            CLIENTS.append((address, files))
+        else:
+            for i, (client, _) in enumerate(CLIENTS):
+                if address == client:
+                    CLIENTS[i] = (address, files)
+                    break
+        filtered = list(filter(lambda clientF: clientF[0] != address, CLIENTS))
         clients = json.dumps({"clients": filtered})
         conn.send(clients.encode())
 
