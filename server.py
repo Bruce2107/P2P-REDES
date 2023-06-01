@@ -18,7 +18,7 @@ def handle_client(conn, address):
         data = conn.recv(1024).decode()
         if not data:
             break
-        files = json.loads(data)['files']
+        files = json.loads(data)["files"]
         if not files:
             break
         if len(check_client_list(address)) == 0:
@@ -34,8 +34,8 @@ def handle_client(conn, address):
 
 
 def server_program():
-    host = socket.gethostname()
-    port = int(os.environ.get('SERVER_PORT') or 4000)
+    host = "192.168.100.6"
+    port = int(os.environ.get("SERVER_PORT") or 4000)
 
     server_socket = socket.socket()
     server_socket.bind((host, port))
@@ -47,5 +47,5 @@ def server_program():
         client_thread.start()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     server_program()
