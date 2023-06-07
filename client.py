@@ -5,42 +5,22 @@ from os import environ, walk
 import sys
 from dotenv import load
 from typing import List, Type
-
-from pubnub.callbacks import SubscribeCallback
-from pubnub.pnconfiguration import PNConfiguration
-from pubnub.pubnub import PubNub
+from enum import Enum
 
 from RepeatedTimer import RepeatedTimer
+
+
+class SocketType(Enum):
+    CLIENT, SERVER = range(1, 3)
+
 
 load()
 folder = sys.argv[1]
 user = sys.argv[2]
-
-pnconfig = PNConfiguration()
-userId = user
-pnconfig.publish_key = 'demo'
-pnconfig.subscribe_key = 'demo'
-pnconfig.user_id = userId
-pnconfig.ssl = True
-pubnub = PubNub(pnconfig)
-
-
-def my_publish_callback(envelope, status):
-    if not status.is_error():
-        pass
-
-
-class MySubscribeCallback(SubscribeCallback):
-    def presence(self, pubnub, presence):
-        pass
-
-    def status(self, pubnub, status):
-        pass
-
-    def message(self, pubnub, message):
-        if message.publisher == userId:
-            return
-        print("from device " + message.publisher + ": " + message.message)
+client_ip = socket.gethostbyname(socket.gethostname())
+client_port = 9999
+server_ip = "192.168.100.4"
+server_port = int(environ.get("SERVER_PORT") or 4000)
 
 
 def get_client_files_name() -> Type[List[str]]:
@@ -61,7 +41,6 @@ def get_rarest_first(peers):
         for peer, files, name in peers:
             if rarest in files:
                 print(peer, name)
-                pubnub.publish().channel(name).message('oi').pn_async(my_publish_callback)
                 break
 
 
@@ -76,19 +55,24 @@ def client_server_connection(**kwargs):
     get_rarest_first(clients)
 
 
-def client_program():
-    host = "192.168.100.6"
-    port = int(environ.get("SERVER_PORT") or 4000)
+def create_socket(address: tuple, socket_type: SocketType) -> socket:
+    new_socket = socket.socket()
+    new_socket.connect(address) if socket_type == SocketType.CLIENT else new_socket.bind(address)
+    return new_socket
 
-    client_socket = socket.socket()
-    client_socket.connect((host, port))
+
+def client_program():
+    client_socket = create_socket((server_ip, server_port), SocketType.CLIENT)
     client_server_connection(socket=client_socket)
     RepeatedTimer(
         10, client_server_connection, socket=client_socket
     )
 
 
+def client_as_server():
+    server_socket = create_socket((client_ip, client_port), SocketType.SERVER)
+    server_socket.listen(5)
+
+
 if __name__ == "__main__":
     client_program()
-    pubnub.add_listener(MySubscribeCallback())
-    pubnub.subscribe().channels(user).execute()

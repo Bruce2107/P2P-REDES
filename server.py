@@ -36,7 +36,7 @@ def handle_client(conn, address):
 
 
 def server_program():
-    host = "192.168.100.6"
+    host = "192.168.100.4"
     port = int(os.environ.get("SERVER_PORT") or 4000)
 
     server_socket = socket.socket()
