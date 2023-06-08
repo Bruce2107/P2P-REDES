@@ -1,5 +1,7 @@
 import json
 import socket
+from socket import SocketType as ST
+import threading
 from collections import Counter
 from os import environ, walk
 import sys
@@ -19,8 +21,8 @@ folder = sys.argv[1]
 user = sys.argv[2]
 client_ip = socket.gethostbyname(socket.gethostname())
 client_port = 9999
-server_ip = "192.168.100.4"
-server_port = int(environ.get("SERVER_PORT") or 4000)
+tracker_ip = "192.168.100.4"
+tracker_port = int(environ.get("SERVER_PORT") or 4000)
 
 
 def get_client_files_name() -> Type[List[str]]:
@@ -40,39 +42,65 @@ def get_rarest_first(peers):
         rarest = order.pop(0)
         for peer, files, name in peers:
             if rarest in files:
-                print(peer, name)
-                break
+                peer_socket = create_socket((peer[0], client_port), SocketType.CLIENT)
+                peer_socket.send(rarest.encode())
+                print(f"Requesting {rarest} from {name}")
+                with open(f"{folder}/{rarest}", "wb") as f:
+                    while True:
+                        bytes_read = peer_socket.recv(1024)
+                        if not bytes_read:
+                            print(f"{folder}/{rarest}")
+                            break
+                        f.write(bytes_read)
+                        peer_socket.close()
+                        break
 
 
-def client_server_connection(**kwargs):
-    c_socket = kwargs.get("socket")
+def connect_to_tracker(**kwargs):
+    tracker = kwargs.get("tracker")
 
     filenames = get_client_files_name()
     jsondump = json.dumps({"files": filenames, "name": user})
-    c_socket.send(jsondump.encode())
-    data = c_socket.recv(1024).decode()
+    tracker.send(jsondump.encode())
+    data = tracker.recv(1024).decode()
     clients = json.loads(data)["clients"]
     get_rarest_first(clients)
 
 
-def create_socket(address: tuple, socket_type: SocketType) -> socket:
+def create_socket(address: tuple, socket_type: SocketType) -> ST:
     new_socket = socket.socket()
-    new_socket.connect(address) if socket_type == SocketType.CLIENT else new_socket.bind(address)
+    if socket_type == SocketType.CLIENT:
+        new_socket.connect(address)
+    else:
+        new_socket.bind(address)
     return new_socket
 
 
-def client_program():
-    client_socket = create_socket((server_ip, server_port), SocketType.CLIENT)
-    client_server_connection(socket=client_socket)
-    RepeatedTimer(
-        10, client_server_connection, socket=client_socket
-    )
+def tracker_program():
+    tracker = create_socket((tracker_ip, tracker_port), SocketType.CLIENT)
+    connect_to_tracker(tracker=tracker)
+    RepeatedTimer(10, connect_to_tracker, tracker=tracker)
 
 
-def client_as_server():
+def handle_request(conn, address):
+    while True:
+        data = conn.recv(1024).decode()
+        if not data:
+            break
+        with open(f"{folder}/{data}", "rb") as f:
+            print(f"Sending {data}")
+            conn.sendfile(f)
+
+
+def server_program():
     server_socket = create_socket((client_ip, client_port), SocketType.SERVER)
     server_socket.listen(5)
+    while True:
+        conn, address = server_socket.accept()
+        client_thread = threading.Thread(target=handle_request, args=(conn, address))
+        client_thread.start()
 
 
 if __name__ == "__main__":
-    client_program()
+    tracker_program()
+    server_program()
