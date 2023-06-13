@@ -4,10 +4,12 @@ from socket import SocketType as ST
 import threading
 from collections import Counter
 from os import environ, walk
+import os
 import sys
 from dotenv import load
 from typing import List, Type
 from enum import Enum
+import keyboard
 
 from RepeatedTimer import RepeatedTimer
 
@@ -53,6 +55,7 @@ def get_rarest_first(peers):
                             break
                         f.write(bytes_read)
                         peer_socket.close()
+                        f.close()
                         break
 
 
@@ -64,7 +67,10 @@ def connect_to_tracker(**kwargs):
     tracker.send(jsondump.encode())
     data = tracker.recv(1024).decode()
     clients = json.loads(data)["clients"]
-    get_rarest_first(clients)
+    if len(clients) >= 2:
+        get_rarest_first(clients)
+    else:
+        print(f"Aguardando {2 - len(clients)} peers entrarem")
 
 
 def create_socket(address: tuple, socket_type: SocketType) -> ST:
@@ -79,7 +85,16 @@ def create_socket(address: tuple, socket_type: SocketType) -> ST:
 def tracker_program():
     tracker = create_socket((tracker_ip, tracker_port), SocketType.CLIENT)
     connect_to_tracker(tracker=tracker)
-    RepeatedTimer(10, connect_to_tracker, tracker=tracker)
+    timer = RepeatedTimer(10, connect_to_tracker, tracker=tracker)
+    keyboard.add_hotkey('esc', exit_tracker, args=[timer])
+
+
+def exit_tracker(*args):
+    timer = args[0]
+    timer.stop()
+    keyboard.remove_hotkey('esc')
+    # raise SystemExit(1)
+    os._exit(0)
 
 
 def handle_request(conn, address):
@@ -90,6 +105,7 @@ def handle_request(conn, address):
         with open(f"{folder}/{data}", "rb") as f:
             print(f"Sending {data}")
             conn.sendfile(f)
+            f.close()
 
 
 def server_program():
