@@ -9,7 +9,6 @@ import sys
 from dotenv import load
 from typing import List, Type
 from enum import Enum
-import keyboard
 
 from RepeatedTimer import RepeatedTimer
 
@@ -25,6 +24,7 @@ client_ip = socket.gethostbyname(socket.gethostname())
 client_port = 9999
 tracker_ip = "192.168.100.4"
 tracker_port = int(environ.get("SERVER_PORT") or 4000)
+MIN_PEER_REQUIRED = 1
 
 
 def get_client_files_name() -> Type[List[str]]:
@@ -51,7 +51,6 @@ def get_rarest_first(peers):
                     while True:
                         bytes_read = peer_socket.recv(1024)
                         if not bytes_read:
-                            print(f"{folder}/{rarest}")
                             break
                         f.write(bytes_read)
                         peer_socket.close()
@@ -67,10 +66,10 @@ def connect_to_tracker(**kwargs):
     tracker.send(jsondump.encode())
     data = tracker.recv(1024).decode()
     clients = json.loads(data)["clients"]
-    if len(clients) >= 2:
+    if len(clients) >= MIN_PEER_REQUIRED:
         get_rarest_first(clients)
     else:
-        print(f"Aguardando {2 - len(clients)} peers entrarem")
+        print(f"Aguardando {MIN_PEER_REQUIRED - len(clients)} peers entrarem")
 
 
 def create_socket(address: tuple, socket_type: SocketType) -> ST:
@@ -85,16 +84,16 @@ def create_socket(address: tuple, socket_type: SocketType) -> ST:
 def tracker_program():
     tracker = create_socket((tracker_ip, tracker_port), SocketType.CLIENT)
     connect_to_tracker(tracker=tracker)
-    timer = RepeatedTimer(10, connect_to_tracker, tracker=tracker)
-    keyboard.add_hotkey('esc', exit_tracker, args=[timer])
+    RepeatedTimer(10, connect_to_tracker, tracker=tracker)
+    # keyboard.add_hotkey("esc", exit_tracker, args=[timer])
 
 
-def exit_tracker(*args):
-    timer = args[0]
-    timer.stop()
-    keyboard.remove_hotkey('esc')
-    # raise SystemExit(1)
-    os._exit(0)
+# def exit_tracker(*args):
+#     timer = args[0]
+#     timer.stop()
+#     keyboard.remove_hotkey("esc")
+#     # raise SystemExit(1)
+#     os._exit(0)
 
 
 def handle_request(conn, address):
