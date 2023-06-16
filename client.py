@@ -9,6 +9,7 @@ import sys
 from dotenv import load
 from typing import List, Type
 from enum import Enum
+import keyboard
 
 from RepeatedTimer import RepeatedTimer
 
@@ -82,18 +83,19 @@ def create_socket(address: tuple, socket_type: SocketType) -> ST:
 
 
 def tracker_program():
+    print('Tracker rodando')
     tracker = create_socket((tracker_ip, tracker_port), SocketType.CLIENT)
     connect_to_tracker(tracker=tracker)
-    RepeatedTimer(10, connect_to_tracker, tracker=tracker)
-    # keyboard.add_hotkey("esc", exit_tracker, args=[timer])
+    timer = RepeatedTimer(10, connect_to_tracker, tracker=tracker)
+    keyboard.add_hotkey("esc", exit_tracker, args=[timer])
 
 
-# def exit_tracker(*args):
-#     timer = args[0]
-#     timer.stop()
-#     keyboard.remove_hotkey("esc")
-#     # raise SystemExit(1)
-#     os._exit(0)
+def exit_tracker(*args):
+    timer = args[0]
+    timer.stop()
+    keyboard.remove_hotkey("esc")
+    # raise SystemExit(1)
+    os._exit(0)
 
 
 def handle_request(conn, address):
@@ -108,6 +110,7 @@ def handle_request(conn, address):
 
 
 def server_program():
+    print('Server rodando')
     server_socket = create_socket((client_ip, client_port), SocketType.SERVER)
     server_socket.listen(5)
     while True:
@@ -117,5 +120,7 @@ def server_program():
 
 
 if __name__ == "__main__":
-    tracker_program()
-    server_program()
+    tracker = threading.Thread(target=tracker_program)
+    server = threading.Thread(target=server_program)
+    tracker.start()
+    server.start()
