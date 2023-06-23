@@ -18,11 +18,12 @@ Execute o comando `pip install -r ./requirements.txt` para instalar as dependên
 
 ### Cliente
 
-- Com o IP do Tracker altere a linha 24 do arquivo `client.py`
+- Com o IP do Tracker altere a linha 26 do arquivo `client.py`
 - Crie uma pasta no diretório raiz contendo os arquivos do cliente
 - Execute o comando `python ./client.py nome_da_pasta nome_do_cliente`
 - O cliente recebe dois parâmetros para funcionar: a pasta com os arquivos e o nome dele
 - O nome do cliente é utilizado para caso o cliente entre de outro IP ainda possa manter a mesma conexão
+- OBS: Caso necessário altere a linha 24 informando diretamente o IP da máquina
 
 ## Autores
 

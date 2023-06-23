@@ -9,7 +9,7 @@ import sys
 from dotenv import load
 from typing import List, Type
 from enum import Enum
-# import keyboard
+import keyboard
 
 from RepeatedTimer import RepeatedTimer
 
@@ -21,7 +21,7 @@ class SocketType(Enum):
 load()
 folder = sys.argv[1]
 user = sys.argv[2]
-client_ip = "192.168.0.189"
+client_ip = socket.gethostbyname(socket.gethostname())
 client_port = 9999
 tracker_ip = "192.168.0.75"
 tracker_port = int(environ.get("SERVER_PORT") or 4000)
@@ -89,7 +89,7 @@ def tracker_program():
     tracker = create_socket((tracker_ip, tracker_port), SocketType.CLIENT)
     connect_to_tracker(tracker=tracker)
     timer = RepeatedTimer(10, connect_to_tracker, tracker=tracker)
-    # keyboard.add_hotkey("esc", exit_tracker, args=[timer])
+    keyboard.add_hotkey("esc", exit_tracker, args=[timer])
 
 
 def exit_tracker(*args):
